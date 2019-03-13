@@ -1,7 +1,6 @@
 import java.io.IOException;
 import java.net.ServerSocket;
 import java.net.SocketException;
-import java.util.ArrayList;
 import java.util.concurrent.CopyOnWriteArraySet;
 
 public class Server {
@@ -21,10 +20,10 @@ public class Server {
             System.out.println("Server Socket hasn't been created");
             System.exit(0);
         }
-        Listener listener = new Listener();
-        ConnectionListener connectionListener = new ConnectionListener();
-        listener.start();
-        connectionListener.start();
+        ListenerThread listenerThread = new ListenerThread();
+        ConnectionListenerThread connectionListenerThread = new ConnectionListenerThread();
+        listenerThread.start();
+        connectionListenerThread.start();
         try {
             logging = new Logging();
             logging.writeToLog("Сервер запущен");
@@ -38,7 +37,7 @@ public class Server {
 
     }
 
-    protected void sendingMessage (String message) throws IOException {
+    protected void sendMessage(String message) throws IOException {
         for (ClientConnection clientConnection : syncClientsList) {
             try {
                 clientConnection.getOut().writeUTF(message);
@@ -60,10 +59,10 @@ public class Server {
         syncClientsList.remove(clientConnection);
         outMessage = clientConnection.getName().concat(" вышел из чата");
         logging.writeToLog(outMessage);
-        sendingMessage(outMessage);
+        sendMessage(outMessage);
     }
 
-    class Listener extends Thread{
+    class ListenerThread extends Thread{
         private ClientConnection newClientConnection;
         @Override
         public void run() {
@@ -73,7 +72,7 @@ public class Server {
                     if (newClientConnection.isCreated()){
                         syncClientsList.add(newClientConnection);
                         outMessage = newClientConnection.getName().concat(" вошел в чат");
-                        sendingMessage(outMessage);
+                        sendMessage(outMessage);
                         logging.writeToLog("Подключился новый пользователь: ".concat(newClientConnection.getName()));
 //                        System.out.println("Подключился новый пользователь: ".concat(newClientConnection.name));
                     }
@@ -91,7 +90,7 @@ public class Server {
         }
     }
 
-    class ConnectionListener extends Thread{
+    class ConnectionListenerThread extends Thread{
         String inMessage;
         String message;
 
@@ -114,7 +113,7 @@ public class Server {
                                 case Variables.SEND_ACTION :
                                     message =inMessage.split(Variables.DELIMITER)[1];
                                     outMessage = new Message().buildMessage(clientConnection.getName(),message);
-                                    sendingMessage(outMessage);
+                                    sendMessage(outMessage);
                                     break;
                             }
 //                            logging.writeToLog(outMessage);
